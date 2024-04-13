@@ -1,0 +1,6 @@
+python-dotenv
+requests
+fastapi[all]
+uvicorn
+dailyai[daily,moondream,openai]
+pygobject==3.46.0
