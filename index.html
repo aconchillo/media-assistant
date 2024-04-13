@@ -1,0 +1,186 @@
+<html>
+  <head>
+    <title>Media Assistant</title>
+  </head>
+  <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
+  <script
+    src="https://code.jquery.com/jquery-3.1.1.min.js"
+    integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+    crossorigin="anonymous"
+    ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.8.6/semantic.min.js"></script>
+  <link
+    rel="stylesheet"
+    type="text/css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.8.6/semantic.min.css"
+    />
+  <script>
+    const TEXT_TIMEOUT = 6000;
+
+    function enableButton(buttonId, enable) {
+        const button = document.getElementById(buttonId);
+        button.disabled = !enable;
+    }
+
+    function enableJoinButton(enable) {
+        enableButton("join-button", enable);
+    }
+
+    function enableLeaveButton(enable) {
+        enableButton("leave-button", enable);
+    }
+
+    function destroyMediaPlayer(participantId) {
+        const audio_player = document.querySelector(
+            `audio[data-participant-id="${participantId}"]`
+        );
+
+        audio_player.remove();
+
+        const video_player = document.querySelector(
+            `video[data-participant-id="${participantId}"]`
+        );
+
+        video_player.remove();
+
+        const elem = document.getElementById("description");
+        elem.textContent = "";
+    }
+
+    async function startPlayer(player, track) {
+        player.muted = false;
+        player.autoplay = true;
+        if (track != null) {
+            player.srcObject = new MediaStream([track]);
+            await player.play();
+        }
+    }
+
+    async function buildAudioPlayer(track, participantId) {
+        const audioContainer = document.getElementById("audio-container");
+        const player = document.createElement("audio");
+        player.dataset.participantId = participantId;
+
+        audioContainer.appendChild(player);
+
+        await startPlayer(player, track);
+
+        return player;
+    }
+
+    async function buildVideoPlayer(track, participantId) {
+        const video_player = document.querySelector(
+            `video[data-participant-id="${participantId}"]`
+        );
+        if (video_player) {
+            return;
+        }
+        const videoContainer = document.getElementById("video-container");
+        const player = document.createElement("video");
+        player.dataset.participantId = participantId;
+
+        videoContainer.appendChild(player);
+
+        await startPlayer(player, track);
+
+        return player;
+    }
+
+    function subscribeToTracks(participantId) {
+        console.log(`subscribing to track`);
+
+        if (participantId === "local") {
+            return;
+        }
+
+        callObject.updateParticipant(participantId, {
+            setSubscribedTracks: {
+                audio: true,
+                video: false,
+            },
+        });
+    }
+
+    function startDaily() {
+        enableJoinButton(true);
+        enableLeaveButton(false);
+
+        window.callObject = window.DailyIframe.createCallObject({});
+
+        callObject.on("participant-joined", (e) => {
+            if (!e.participant.local) {
+                console.log("participant-joined", e.participant);
+                subscribeToTracks(e.participant.session_id);
+            }
+        });
+
+        callObject.on("participant-left", (e) => {
+            console.log("participant-left", e.participant.session_id);
+            destroyMediaPlayer(e.participant.session_id);
+        });
+
+        callObject.on("app-message", (msg) => {
+            console.log("app-message", msg);
+            if (msg["data"]["type"] === "gst") {
+                const elem = document.getElementById("description");
+                elem.textContent = msg["data"]["text"];
+                setTimeout(function clearText() {
+                    elem.textContent = "";
+                }, TEXT_TIMEOUT);
+            }
+        });
+
+        callObject.on("track-started", async (e) => {
+            console.log("track-started", e.track);
+            if (e.track.kind === "audio") {
+                await buildAudioPlayer(e.track, e.participant.session_id);
+            } else if (e.track.kind === "video") {
+                await buildVideoPlayer(e.track, e.participant.session_id);
+            }
+        });
+    }
+
+    async function joinRoom() {
+        enableJoinButton(false);
+        enableLeaveButton(true);
+
+        callObject.join({
+            url: "DAILY_ROOM_URL",
+            startVideoOff: true,
+            startAudioOff: true,
+            subscribeToTracksAutomatically: true,
+        });
+    }
+
+    async function leaveRoom() {
+        enableJoinButton(true);
+        enableLeaveButton(false);
+
+
+        callObject.leave();
+
+        const audioContainer = document.getElementById("audio-container");
+        audioContainer.replaceChildren();
+        const videoContainer = document.getElementById("video-container");
+        videoContainer.replaceChildren();
+    }
+  </script>
+
+  <body onload="startDaily()">
+    <div class="ui centered aligned header" style="margin-top: 30px">
+      <button id="join-button" class="ui primary button" onclick="joinRoom()">
+        Join
+      </button>
+      <button id="leave-button" class="ui button" onclick="leaveRoom()">
+        Leave
+      </button>
+    </div>
+    <div id="tile" class="ui container" style="margin-top: 30px">
+      <div id="audio-container"></div>
+      <div id="video-container" class="ui segment"></div>
+    </div>
+    <div id="tile" class="ui container" style="margin-top: 30px">
+      <h1 id="description"></h1>
+    </div>
+  </body>
+</html>

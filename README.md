@@ -26,7 +26,7 @@ cp env.example .env # and add your credentials
 
 # Client
 
-Edit the `index.html` and look where to enter your Daily room in there.
+Edit the `index.html` and change `DAILY_ROOM_URL` for your Daily room.
 
 Open a browser and load the `index.html` from this repo.
 
