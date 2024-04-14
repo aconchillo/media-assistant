@@ -15,7 +15,7 @@ ElevenLabs) of the video every 10 seconds.
 ℹ️ The first time, things might take some time to get started since the vision
 model needs to be downloaded.
 
-## Dependencies
+# Dependencies
 
 This is the list of technologies used in this demo:
 
@@ -27,18 +27,7 @@ This is the list of technologies used in this demo:
 | [Moondream](https://moondream.ai/)              | AI Vision Model                      |
 | [GStreamer](https://gstreamer.freedesktop.org/) | Multimedia framework                 |
 
-## Get started
-
-```python
-python3 -m venv venv
-source env/bin/activate
-pip install -r requirements.txt
-
-cp env.example .env # and add your credentials
-
-```
-
-# Client
+# Web client
 
 Edit the `index.html` and change `DAILY_ROOM_URL` for your Daily room.
 
@@ -48,7 +37,18 @@ Open a browser and load the `index.html` from this repo.
 open index.html
 ```
 
-## Run the server
+# Run the server
+
+Setup your Python environment:
+
+```python
+python3 -m venv venv
+source env/bin/activate
+pip install -r requirements.txt
+
+cp env.example .env # and add your credentials
+
+```
 
 Start the backend server and give it a video file (e.g. MP4).
 
